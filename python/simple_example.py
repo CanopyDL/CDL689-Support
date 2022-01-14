@@ -1,4 +1,9 @@
-from imu_driver import *
+#The CDL689 driver requires pymodbus.  To install:
+# https://pymodbus.readthedocs.io/en/latest/readme.html#installing
+# pip install  -U pymodbus
+
+from CDL689 import *
+import time
 
 imu = CDL689()
 imu.open('/dev/cu.usbserial-AM00KH14')

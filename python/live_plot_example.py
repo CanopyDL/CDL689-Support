@@ -1,18 +1,16 @@
+#The CDL689 driver requires pymodbus.  To install:
+# https://pymodbus.readthedocs.io/en/latest/readme.html#installing
+# pip install  -U pymodbus
+
 from CDL689 import *
+
 import time
-import time
-import numpy as np
 import tkinter as Tk
 import matplotlib
 
 matplotlib.use("tkagg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
-import math
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import datetime
-import csv
 
 
 def on_closing():

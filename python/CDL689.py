@@ -18,9 +18,9 @@ class CDL689:
         self.buffer_length = 100
         self.acc = np.zeros((3, self.buffer_length), dtype=np.int)
         self.gyro = np.zeros((3, self.buffer_length), dtype=np.int)
-
+        self.port = ''
     def open(self,port):
-        self.ser = serial.Serial(port, 230400, timeout=0)
+        self.port = port
         self.mod = ModbusSerialClient(port=port, baudrate=230400, method="RTU")
         self.connect=1
         self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
@@ -39,14 +39,19 @@ class CDL689:
 
     def close(self):
         self.connect = 0
-        self.ser.close()
+        #self.ser.close()
         self.mod.close()
 
     def start_stream(self):
         self.mod.write_register(10, 0x69, unit=UNIT)  # start streaming
         self.stream = 1
+        #switch from ModBus to Serial
+        self.mod.close()
+        self.ser = serial.Serial(self.port, 230400, timeout=0)
 
     def stop_stream(self):
+        self.ser.close()
+        self.mod = ModbusSerialClient(port=self.port, baudrate=230400, method="RTU")
         self.mod.write_register(10, 0x96, unit=UNIT)  # start streaming
         self.stream = 0
 

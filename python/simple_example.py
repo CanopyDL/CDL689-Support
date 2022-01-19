@@ -1,7 +1,8 @@
-from imu_driver import *
+from CDL689 import *
+import time
 
 imu = CDL689()
-imu.open('/dev/cu.usbserial-AM00KH14')
+imu.open('COM7')
 imu.start_stream()
 
 t0=time.time()

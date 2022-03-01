@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # OBJECTS
     ##########
     port_var = Tk.StringVar()
-    port_var.set('/dev/cu.usbserial-AM00KH14')
+    port_var.set('/dev/cu.usbserial-AD0K5L6R')
     ###########
 
     # current_date()

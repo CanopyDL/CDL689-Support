@@ -3,6 +3,7 @@ from pymodbus.client.sync import ModbusSerialClient
 import numpy as np
 
 UNIT = 0x01
+BAUD = 230400
 
 def twos_comp(val, bits):
     """compute the 2's compliment of int value val"""
@@ -21,7 +22,7 @@ class CDL689:
         self.port = ''
     def open(self,port):
         self.port = port
-        self.mod = ModbusSerialClient(port=port, baudrate=230400, method="RTU")
+        self.mod = ModbusSerialClient(port=port, baudrate=BAUD, method="RTU")
         self.connect=1
         self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
 
@@ -47,17 +48,34 @@ class CDL689:
         self.stream = 1
         #switch from ModBus to Serial
         self.mod.close()
-        self.ser = serial.Serial(self.port, 230400, timeout=0)
+        self.ser = serial.Serial(self.port, BAUD, timeout=0)
 
     def stop_stream(self):
         self.ser.close()
-        self.mod = ModbusSerialClient(port=self.port, baudrate=230400, method="RTU")
-        self.mod.write_register(10, 0x96, unit=UNIT)  # start streaming
+        self.mod = ModbusSerialClient(port=self.port, baudrate=BAUD, method="RTU")
+        self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
+        self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
+        self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
+        self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
+        self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
         self.stream = 0
 
     def setUpdateRate(self, newRate):
         #set the period of the stream timer in microseconds
         self.mod.write_register(11, newRate, unit=UNIT)  # start streaming
+
+    def readTemperature(self):
+        self.mod.write_register(1, 0x20, unit=UNIT)
+        rr = self.mod.read_holding_registers(3, 1, unit=UNIT)
+        lowByte = rr.registers[0]
+        self.mod.write_register(1, 0x21, unit=UNIT)
+        rr = self.mod.read_holding_registers(3, 1, unit=UNIT)
+        highByte = rr.registers[0]
+        temperature = (highByte << 8) + lowByte
+        temperature = twos_comp(temperature, 16)
+        #The output of the temperature sensor is 0 LSB (typ.) at 25 °C.
+        #Output resolution is 256LSB per degree C
+        return (25 + (temperature / 256))   #convert to degrees C
 
     def tasks(self):
         if self.connect and self.stream:

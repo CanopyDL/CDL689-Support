@@ -19,11 +19,14 @@ class CDL689:
         self.buffer_length = 100
         self.acc = np.zeros((3, self.buffer_length), dtype=np.int)
         self.gyro = np.zeros((3, self.buffer_length), dtype=np.int)
+        self.temp = 0
         self.port = ''
     def open(self,port):
         self.port = port
         self.mod = ModbusSerialClient(port=port, baudrate=BAUD, method="RTU")
         self.connect=1
+        self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
+        self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
         self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
 
         # setup accelerometer
@@ -34,9 +37,9 @@ class CDL689:
         self.mod.write_register(3, 0x50, unit=UNIT)  # data
         self.mod.write_register(2, 0x11, unit=UNIT)  # IMU register
 
-        self.mod.write_register(1, 0x0F, unit=UNIT)  # WHO AM I
-        rr = self.mod.read_holding_registers(3, 1, unit=UNIT)
-        print(rr.registers[0])
+        #self.mod.write_register(1, 0x0F, unit=UNIT)  # WHO AM I
+        #rr = self.mod.read_holding_registers(3, 1, unit=UNIT)
+        #print(rr.registers[0])
 
     def close(self):
         self.connect = 0
@@ -94,5 +97,7 @@ class CDL689:
                         self.acc[1, 0] = twos_comp(int.from_bytes(val[8:10], byteorder='little'),16)
                         self.acc[2, 0] = twos_comp(int.from_bytes(val[10:12], byteorder='little'),16)
 
+                        self.temp = twos_comp(int.from_bytes(val[12:14], byteorder='little'),16)
+                        self.temp = (25 + (self.temp / 256))
                 self.sentence = vals[-1]
 

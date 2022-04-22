@@ -61,6 +61,7 @@ def disconnect():
 
 def start_stream():
     imu.setUpdateRate(10000)
+    imu.setBaudRate(230400)
     imu.start_stream()
 
 def stop_stream():

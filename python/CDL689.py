@@ -3,7 +3,6 @@ from pymodbus.client.sync import ModbusSerialClient
 import numpy as np
 
 UNIT = 0x01
-BAUD = 230400
 
 def twos_comp(val, bits):
     """compute the 2's compliment of int value val"""
@@ -24,10 +23,11 @@ class CDL689:
         self.temp = 0
         self.port = ''
         self.raw = np.zeros(self.buffer_length, dtype=np.int)
+        self.baudRate = 9600
 
     def open(self,port):
         self.port = port
-        self.mod = ModbusSerialClient(port=port, baudrate=BAUD, method="RTU")
+        self.mod = ModbusSerialClient(port=port, baudrate=self.baudRate, method="RTU")
         self.connect=1
         self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
         self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
@@ -55,11 +55,11 @@ class CDL689:
         self.stream = 1
         #switch from ModBus to Serial
         self.mod.close()
-        self.ser = serial.Serial(self.port, BAUD, timeout=0)
+        self.ser = serial.Serial(self.port, self.baudRate, timeout=0)
 
     def stop_stream(self):
         self.ser.close()
-        self.mod = ModbusSerialClient(port=self.port, baudrate=BAUD, method="RTU")
+        self.mod = ModbusSerialClient(port=self.port, baudrate=self.baudRate, method="RTU")
         self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
         self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
         self.mod.write_register(10, 0x96, unit=UNIT)  # stop streaming
@@ -70,6 +70,14 @@ class CDL689:
     def setUpdateRate(self, newRate):
         #set the period of the stream timer in microseconds
         self.mod.write_register(11, newRate, unit=UNIT)  # start streaming
+
+    def setBaudRate(self, newRate):
+        # set the period of the stream timer in microseconds
+        self.baudRate = newRate
+        self.mod.write_register(12, int(newRate / 100), unit=UNIT)  # set baudrate (divide by 100 to fit into 16 bits)
+        #reopen the modbus using the new baud rate
+        self.mod.close()
+        self.mod = ModbusSerialClient(port=self.port, baudrate=self.baudRate, method="RTU")
 
     def readTemperature(self):
         self.mod.write_register(1, 0x20, unit=UNIT)

@@ -24,6 +24,7 @@ class CDL689:
         self.port = ''
         self.raw = np.zeros(self.buffer_length, dtype=np.int)
         self.baudRate = 9600
+        self.samplesPerFrame = 1
 
     def open(self,port):
         self.port = port
@@ -79,6 +80,12 @@ class CDL689:
         self.mod.close()
         self.mod = ModbusSerialClient(port=self.port, baudrate=self.baudRate, method="RTU")
 
+    def setSamplesPerFrame(self, numSamples):
+        # set the period of the stream timer in microseconds
+        self.samplesPerFrame = numSamples
+        self.mod.write_register(13, numSamples,
+                                unit=UNIT)  # set baudrate (divide by 100 to fit into 16 bits)
+
     def readTemperature(self):
         self.mod.write_register(1, 0x20, unit=UNIT)
         rr = self.mod.read_holding_registers(3, 1, unit=UNIT)
@@ -92,6 +99,12 @@ class CDL689:
         #Output resolution is 256LSB per degree C
         return (25 + (temperature / 256))   #convert to degrees C
 
+    def readUniqueId(self):
+        rr = self.mod.read_holding_registers(122, 6, unit=UNIT)
+        uniqueId = (rr.registers[0] << 80) + (rr.registers[1] << 64) + (rr.registers[2] << 48)  + (rr.registers[3] << 32) + (rr.registers[4] << 16) + (rr.registers[5] << 0)
+
+        return uniqueId
+
     def tasks(self):
         if self.connect and self.stream:
             if (self.ser.inWaiting() > 0):
@@ -100,14 +113,16 @@ class CDL689:
                 for i in range(len(vals) - 1):
                     val = vals[i]
                     if len(val) > 0:
-                        self.gyro = np.roll(self.gyro, 1)
-                        self.gyro[0, 0] = twos_comp(int.from_bytes(val[0:2], byteorder='little'),16)
-                        self.gyro[1, 0] = twos_comp(int.from_bytes(val[2:4], byteorder='little'),16)
-                        self.gyro[2, 0] = twos_comp(int.from_bytes(val[4:6], byteorder='little'),16)
-                        self.acc = np.roll(self.acc, 1)
-                        self.acc[0, 0] = twos_comp(int.from_bytes(val[6:8], byteorder='little'),16)
-                        self.acc[1, 0] = twos_comp(int.from_bytes(val[8:10], byteorder='little'),16)
-                        self.acc[2, 0] = twos_comp(int.from_bytes(val[10:12], byteorder='little'),16)
+                        for sampleIndex in range(0, self.samplesPerFrame):
+                            self.gyro = np.roll(self.gyro, 1)
+                            offset = sampleIndex * 12
+                            self.gyro[0, 0] = twos_comp(int.from_bytes(val[offset:offset + 2], byteorder='little'),16)
+                            self.gyro[1, 0] = twos_comp(int.from_bytes(val[offset + 2:offset + 4], byteorder='little'),16)
+                            self.gyro[2, 0] = twos_comp(int.from_bytes(val[offset + 4:offset + 6], byteorder='little'),16)
+                            self.acc = np.roll(self.acc, 1)
+                            self.acc[0, 0] = twos_comp(int.from_bytes(val[offset + 6:offset + 8], byteorder='little'),16)
+                            self.acc[1, 0] = twos_comp(int.from_bytes(val[offset + 8:offset + 10], byteorder='little'),16)
+                            self.acc[2, 0] = twos_comp(int.from_bytes(val[offset + 10:offset + 12], byteorder='little'),16)
 
                         self.temp = twos_comp(int.from_bytes(val[12:14], byteorder='little'),16)
                         self.temp = (25 + (self.temp / 256))
@@ -116,8 +131,8 @@ class CDL689:
 
                         self.CRC = int.from_bytes(val[18:20], byteorder='little')
 
-                        for index in range(0, len(val) - 1):
-                            self.raw[index] = int.from_bytes(val[index:index+1],byteorder='little')
+                        # for index in range(0, len(val) - 1):
+                        #     self.raw[index] = int.from_bytes(val[index:index+1],byteorder='little')
 
                 self.sentence = vals[-1]
 

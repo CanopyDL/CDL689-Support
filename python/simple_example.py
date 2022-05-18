@@ -12,14 +12,17 @@ imu = CDL689()
 
 #Linux/MacOS
 imu.open('/dev/cu.usbserial-AD0K5L6R')
+imu.setSamplesPerFrame(2)
+imu.setUpdateRate(5000)
+imu.setBaudRate(115200)
 
-imu.setUpdateRate(1000)
-imu.setBaudRate(230400)
+print("Unique ID:")
+print(imu.readUniqueId())
 
 print("Temperature:")
 print(imu.readTemperature())
-
-#uncomment this section to stream data for a fixed period of time
+#
+# #uncomment this section to stream data for a fixed period of time
 imu.start_stream()
 t0=time.time()
 while (time.time()-t0) < 1: #stream for one second

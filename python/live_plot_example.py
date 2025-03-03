@@ -60,8 +60,8 @@ def disconnect():
     imu.close()
 
 def start_stream():
-    imu.setUpdateRate(10000)
-    imu.setBaudRate(230400)
+    imu.setUpdateRate(500)
+    imu.setBaudRate(500000)
     imu.start_stream()
 
 def stop_stream():
@@ -136,5 +136,5 @@ if __name__ == "__main__":
         gui_tasks()
         imu.tasks()
         data_tasks()
-        time.sleep(.005)
+        #time.sleep(.005)
     root.quit()
